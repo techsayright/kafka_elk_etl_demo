@@ -1,0 +1,33 @@
+python3 -m venv <env_name>
+
+source <env_name>/bin/activate
+
+pip install -r requirements.txt
+
+docker-compose -f kafka.yaml up -d
+
+python3 producer.py
+
+docker-compose -f elasticsearch.yaml up -d
+
+# install logstash
+cd /etc/logstash/conf.d
+touch kafka_elastic_pipeline.conf
+vi kafka_elastic_pipeline.conf -->
+    input {
+        kafka {
+                bootstrap_servers => "192.168.0.10:9093"
+                topics => ["registered_user"]
+        }
+    }
+
+    output {
+    elasticsearch {
+        hosts => ["192.168.0.10:9200"]
+        index => "registered_user"
+        workers => 1
+        }
+    }
+
+sudo systemctl start logstash
+sudo systemctl status logstash
